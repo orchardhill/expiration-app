@@ -7,6 +7,7 @@ const API_SECRET = 'rCF+2qYvyis5ulxT)6n&xao(svfCNmv#(pfxGXY-CUGHX!XV';
 // ===============================
 // ELEMENT REFERENCES
 // ===============================
+const takePicBtn = document.getElementById('takePicBtn');
 const scanBtn = document.getElementById('scanBtn');
 const photoInput = document.getElementById('photoInput');
 const imagePreview = document.getElementById('imagePreview');
@@ -19,6 +20,13 @@ const form = document.getElementById('itemForm');
 const resultEl = document.getElementById('result');
 
 // ===============================
+// CAMERA HANDLER
+// ===============================
+takePicBtn.addEventListener('click', () => {
+    photoInput.click();
+});
+
+// ===============================
 // OCR SCAN HANDLER
 // ===============================
 scanBtn.addEventListener('click', async () => {
@@ -27,7 +35,6 @@ scanBtn.addEventListener('click', async () => {
         return;
     }
 
-    // FIX: Select the specific file from the input list
     const file = photoInput.files[0];
     imagePreview.src = URL.createObjectURL(file);
     imagePreview.style.display = 'block';
@@ -35,12 +42,9 @@ scanBtn.addEventListener('click', async () => {
     ocrProgress.style.width = '0%';
     ocrStatus.textContent = 'OCR: Initializing...';
 
-    // FIX: Pass the single file object to Tesseract
     Tesseract.recognize(file, 'eng', {
         logger: m => {
-            // Show every status (loading, initializing, etc.) so it doesn't look frozen
             ocrStatus.textContent = `OCR: ${m.status}...`;
-            
             if (m.status === 'recognizing text') {
                 const percent = Math.round(m.progress * 100);
                 ocrProgress.style.width = percent + '%';
@@ -56,7 +60,7 @@ scanBtn.addEventListener('click', async () => {
 });
 
 // ===============================
-// OCR RESULT PARSING + UI UPDATE
+// OCR RESULT PARSING
 // ===============================
 function handleOCRResult(text) {
     const upper = text.toUpperCase();
@@ -69,7 +73,7 @@ function handleOCRResult(text) {
 
     const dateMatch = upper.match(/(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/);
     if (dateMatch) {
-        const d = new Date(dateMatch[1]);
+        const d = new Date(dateMatch[0]);
         if (!isNaN(d)) {
             form.expirationDate.value = d.toISOString().slice(0, 10);
         }
@@ -83,11 +87,11 @@ function handleOCRResult(text) {
 
     confirmCard.classList.remove('hidden');
     rawTextCard.classList.remove('hidden');
-    ocrStatus.textContent = 'OCR complete. Please review and confirm.';
+    ocrStatus.textContent = 'OCR complete. Review and confirm.';
 }
 
 // ===============================
-// FORM SUBMIT (SAVE ITEM)
+// FORM SUBMIT
 // ===============================
 form.addEventListener('submit', async e => {
     e.preventDefault();
@@ -120,14 +124,10 @@ form.addEventListener('submit', async e => {
             resultEl.textContent = json.error || 'Error saving item.';
         }
     } catch (err) {
-        console.error("Fetch Error:", err);
         resultEl.textContent = 'Network error.';
     }
 });
 
-// ===============================
-// RESET UI AFTER SAVE
-// ===============================
 function resetUI() {
     form.reset();
     photoInput.value = '';
