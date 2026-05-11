@@ -1,151 +1,93 @@
-// ===============================
-// CONFIG
-// ===============================
 const API_URL = 'https://google.com';
 const API_SECRET = 'rCF+2qYvyis5ulxT)6n&xao(svfCNmv#(pfxGXY-CUGHX!XV';
 
-// Ensure the script waits for the HTML to be fully loaded
 document.addEventListener('DOMContentLoaded', () => {
-
-    // ===============================
-    // ELEMENT REFERENCES
-    // ===============================
     const takePicBtn = document.getElementById('takePicBtn');
     const scanBtn = document.getElementById('scanBtn');
     const photoInput = document.getElementById('photoInput');
-    const imagePreview = document.getElementById('imagePreview');
-    const ocrProgress = document.getElementById('ocrProgress');
     const ocrStatus = document.getElementById('ocrStatus');
-    const confirmCard = document.getElementById('confirmCard');
-    const rawTextCard = document.getElementById('rawTextCard');
-    const rawTextArea = document.getElementById('rawText');
+    const ocrProgress = document.getElementById('ocrProgress');
+    const imagePreview = document.getElementById('imagePreview');
     const form = document.getElementById('itemForm');
-    const resultEl = document.getElementById('result');
+    const confirmCard = document.getElementById('confirmCard');
 
-    // ===============================
-    // CAMERA HANDLER
-    // ===============================
+    // 1. Trigger camera
     if (takePicBtn) {
-        takePicBtn.addEventListener('click', () => {
-            photoInput.click(); // Trigger the hidden file input
-        });
+        takePicBtn.onclick = () => photoInput.click();
     }
 
-    // ===============================
-    // OCR SCAN HANDLER
-    // ===============================
+    // 2. Scan Logic with Safety Check
     if (scanBtn) {
-        scanBtn.addEventListener('click', async () => {
-            if (!photoInput.files.length) {
-                ocrStatus.textContent = 'Please take a photo first.';
+        scanBtn.onclick = async () => {
+            // FIX: Check if Tesseract loaded before running
+            if (typeof Tesseract === 'undefined') {
+                alert("The scanner library is still downloading. Please wait 10 seconds and try again.");
                 return;
             }
 
-            // Select the FIRST file from the input
+            if (!photoInput.files.length) {
+                alert("Please take a photo first.");
+                return;
+            }
+
             const file = photoInput.files[0];
             imagePreview.src = URL.createObjectURL(file);
             imagePreview.style.display = 'block';
-            
-            ocrProgress.style.width = '0%';
-            ocrStatus.textContent = 'OCR: Initializing...';
+            ocrStatus.textContent = "Starting scan...";
 
-            Tesseract.recognize(file, 'eng', {
-                logger: m => {
-                    ocrStatus.textContent = `OCR: ${m.status}...`;
-                    if (m.status === 'recognizing text') {
-                        const percent = Math.round(m.progress * 100);
-                        ocrProgress.style.width = percent + '%';
-                        ocrStatus.textContent = `OCR: Analyzing… ${percent}%`;
+            try {
+                const result = await Tesseract.recognize(file, 'eng', {
+                    logger: m => {
+                        if (m.status === 'recognizing text') {
+                            const p = Math.round(m.progress * 100);
+                            ocrProgress.style.width = p + '%';
+                            ocrStatus.textContent = `Analyzing: ${p}%`;
+                        }
                     }
-                }
-            })
-            .then(result => handleOCRResult(result.data.text))
-            .catch(err => {
-                console.error("OCR Error:", err);
-                ocrStatus.textContent = 'OCR failed. Please try again.';
-            });
-        });
-    }
-
-    // ===============================
-    // OCR RESULT PARSING
-    // ===============================
-    function handleOCRResult(text) {
-        const upper = text.toUpperCase();
-        rawTextArea.value = text;
-        const lines = upper.split('\n').map(l => l.trim()).filter(Boolean);
-
-        // Name Heuristic
-        if (lines.length && !form.itemName.value) {
-            form.itemName.value = lines[0];
-        }
-
-        // Date Detection
-        const dateMatch = upper.match(/(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/);
-        if (dateMatch) {
-            const d = new Date(dateMatch[1]);
-            if (!isNaN(d)) {
-                form.expirationDate.value = d.toISOString().slice(0, 10);
+                });
+                
+                // Show form and fill name
+                confirmCard.classList.remove('hidden');
+                document.getElementById('itemName').value = result.data.text.split('\n')[0] || "";
+                ocrStatus.textContent = "Scan Complete!";
+                
+            } catch (err) {
+                console.error(err);
+                ocrStatus.textContent = "Scan failed. Try again.";
             }
-        }
-
-        // Qty/Unit Detection
-        const qtyMatch = upper.match(/([\d\.]+)\s*(LB|LBS|OZ|CT|COUNT|G|KG)/);
-        if (qtyMatch) {
-            form.quantity.value = qtyMatch[1];
-            form.unit.value = qtyMatch[2].toLowerCase();
-        }
-
-        confirmCard.classList.remove('hidden');
-        rawTextCard.classList.remove('hidden');
-        ocrStatus.textContent = 'OCR complete. Review and confirm.';
-    }
-
-    // ===============================
-    // FORM SUBMIT
-    // ===============================
-    form.addEventListener('submit', async e => {
-        e.preventDefault();
-        const data = {
-            itemName: form.itemName.value,
-            quantity: form.quantity.value,
-            unit: form.unit.value,
-            expirationDate: form.expirationDate.value,
-            location: form.location.value,
-            assignedTo: form.assignedTo.value,
-            createdBy: 'pwa'
         };
+    }
 
-        resultEl.textContent = 'Saving…';
+    // 3. Save to Google Sheets
+    if (form) {
+        form.onsubmit = async (e) => {
+            e.preventDefault();
+            const resEl = document.getElementById('result');
+            resEl.textContent = "Saving to Google Sheets...";
 
-        try {
-            const response = await fetch(
-                API_URL + '?key=' + encodeURIComponent(API_SECRET),
-                {
+            const data = {
+                itemName: document.getElementById('itemName').value,
+                expirationDate: document.getElementById('expirationDate').value,
+                location: document.getElementById('location').value,
+                createdBy: 'pwa'
+            };
+
+            try {
+                const response = await fetch(`${API_URL}?key=${encodeURIComponent(API_SECRET)}`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
+                });
+                const json = await response.json();
+                if (json.success) {
+                    resEl.textContent = "✅ Saved Successfully!";
+                    form.reset();
+                    confirmCard.classList.add('hidden');
+                } else {
+                    resEl.textContent = "❌ Error: " + json.error;
                 }
-            );
-            const json = await response.json();
-            if (json.success) {
-                resultEl.textContent = 'Saved successfully.';
-                resetUI();
-            } else {
-                resultEl.textContent = json.error || 'Error saving item.';
+            } catch (err) {
+                resEl.textContent = "❌ Network Error. Check your internet.";
             }
-        } catch (err) {
-            resultEl.textContent = 'Network error.';
-        }
-    });
-
-    function resetUI() {
-        form.reset();
-        photoInput.value = '';
-        imagePreview.style.display = 'none';
-        ocrProgress.style.width = '0%';
-        ocrStatus.textContent = '';
-        confirmCard.classList.add('hidden');
-        rawTextCard.classList.add('hidden');
+        };
     }
 });
