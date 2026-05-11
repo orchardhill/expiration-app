@@ -2,12 +2,12 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <title>Exp Tracker v1.0.9</title>
+    <title>Exp Tracker v1.1.0</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="manifest" href="manifest.json" />
     
-    <!-- SWITCHED TO CLOUDFLARE FOR BETTER ACCESS -->
-    <script src="https://cloudflare.com"></script>
+    <!-- DIRECT BUNDLE LINK -->
+    <script src="https://jsdelivr.net"></script>
 
     <style>
         body { margin: 0; font-family: -apple-system, sans-serif; background: #f4f6f8; color: #333; }
@@ -37,21 +37,17 @@
             <div class="progress-container"><div id="ocrProgress" style="height: 100%; width: 0%; background: #4caf50;"></div></div>
             <div id="ocrStatus">Ready...</div>
         </div>
-
         <div id="confirmCard" class="card hidden">
-            <h3>✅ Confirm</h3>
+            <h3>✅ Confirm Details</h3>
             <form id="itemForm">
                 <input type="text" id="itemName" placeholder="Item Name" style="width:100%; padding:10px; margin-bottom:10px;" required />
-                <input type="date" id="expirationDate" style="width:100%; padding:10px; margin-bottom:10px;" required />
                 <button type="submit" class="primary-btn" style="background:#27ae60;">Save to Sheet</button>
             </form>
         </div>
-
         <div class="footer-info">
-            Build: 1.0.9 | Scanner: <span id="libStatus" class="status-waiting">🔴 Connecting...</span>
-            <div id="log" style="font-size: 8px; margin-top: 5px;">Log: starting up...</div>
+            Build: 1.1.0 | Scanner: <span id="libStatus" class="status-waiting">🔴 Connecting...</span>
         </div>
     </div>
-    <script src="app.js?v=1.0.9"></script>
+    <script src="app.js?v=1.1.0"></script>
 </body>
 </html>
