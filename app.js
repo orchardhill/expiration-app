@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const APP_VERSION = "1.1.1"; // UPDATE THIS EVERY TIME YOU PUSH
+    const APP_VERSION = "1.1.2";
     
     const libStatus = document.getElementById('libStatus');
     const scanBtn = document.getElementById('scanBtn');
@@ -10,7 +10,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const GOOGLE_SCRIPT_URL = 'https://google.com';
 
-    // Update the UI version display
     document.getElementById('appVersion').textContent = APP_VERSION;
 
     // --- 1. MONITOR LIBRARY ---
@@ -20,28 +19,28 @@ document.addEventListener('DOMContentLoaded', () => {
             libStatus.className = "status-ready";
             clearInterval(checkLibrary);
         }
-    }, 1000);
+    }, 500);
 
     // --- 2. CAMERA TRIGGER ---
     document.getElementById('takePicBtn').onclick = () => photoInput.click();
 
     // --- 3. RUN OCR SCAN ---
     scanBtn.onclick = async () => {
-        if (typeof Tesseract === 'undefined') return alert(`[v${APP_VERSION}] OCR Library not loaded!`);
+        if (typeof Tesseract === 'undefined') return alert(`[v${APP_VERSION}] Scanner not loaded!`);
         if (!photoInput.files.length) return alert("Take a photo first!");
 
         const file = photoInput.files[0];
         document.getElementById('imagePreview').src = URL.createObjectURL(file);
         document.getElementById('imagePreview').style.display = 'block';
         
-        ocrStatus.textContent = "⚡ Starting Engine...";
+        ocrStatus.textContent = "⚡ Starting...";
         ocrProgress.style.width = '0%';
 
         try {
             const worker = await Tesseract.createWorker('eng', 1, {
                 logger: m => {
                     if (m.status === 'recognizing text') {
-                        ocrStatus.textContent = "Analyzing Image...";
+                        ocrStatus.textContent = "Scanning...";
                         ocrProgress.style.width = Math.round(m.progress * 100) + '%';
                     }
                 }
@@ -54,9 +53,10 @@ document.addEventListener('DOMContentLoaded', () => {
             
             document.getElementById('confirmCard').classList.remove('hidden');
             document.getElementById('itemName').value = cleanText;
-            ocrStatus.textContent = "Scan Complete!";
+            ocrStatus.textContent = "Done!";
         } catch (e) {
             ocrStatus.textContent = "Error: " + e.message;
+            console.error(e);
         }
     };
 
@@ -67,7 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const submitBtn = e.target.querySelector('button');
         
         submitBtn.disabled = true;
-        submitBtn.textContent = "Saving...";
+        submitBtn.textContent = "Sending...";
 
         try {
             await fetch(GOOGLE_SCRIPT_URL, {
@@ -80,8 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 })
             });
 
-            alert(`✅ Saved Successfully (Build ${APP_VERSION})`);
-            
+            alert(`✅ Saved (Build ${APP_VERSION})`);
             document.getElementById('confirmCard').classList.add('hidden');
             document.getElementById('imagePreview').style.display = 'none';
             itemForm.reset();
