@@ -1,115 +1,57 @@
-const API_URL = 'https://google.com';
-const API_SECRET = 'rCF+2qYvyis5ulxT)6n&xao(svfCNmv#(pfxGXY-CUGHX!XV';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Exp Tracker v1.0.7</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="manifest" href="manifest.json" />
+    
+    <!-- Primary Library Link -->
+    <script id="tess-lib" src="https://cloudflare.com"></script>
 
-document.addEventListener('DOMContentLoaded', () => {
-    const libStatus = document.getElementById('libStatus');
-    const scanBtn = document.getElementById('scanBtn');
-    const photoInput = document.getElementById('photoInput');
-    const ocrStatus = document.getElementById('ocrStatus');
-    const ocrProgress = document.getElementById('ocrProgress');
-    const imagePreview = document.getElementById('imagePreview');
-    const confirmCard = document.getElementById('confirmCard');
-    const form = document.getElementById('itemForm');
-    const resultEl = document.getElementById('result');
+    <style>
+        body { margin: 0; font-family: -apple-system, sans-serif; background: #f4f6f8; color: #333; }
+        .app-header { background: #3f6fb5; color: white; padding: 16px; font-weight: bold; text-align: center; }
+        .container { padding: 16px; max-width: 500px; margin: 0 auto; }
+        .card { background: white; border-radius: 8px; padding: 16px; margin-bottom: 16px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .primary-btn { background: #3f6fb5; color: white; padding: 14px; width: 100%; border: none; border-radius: 6px; font-weight: bold; margin-top: 10px; cursor: pointer; }
+        .take-pic-btn { background: #2c3e50; }
+        .hidden { display: none; }
+        #ocrStatus { margin-top: 10px; font-size: 14px; color: #666; text-align: center; }
+        .progress-container { width: 100%; height: 12px; background: #eee; border-radius: 10px; margin-top: 10px; overflow: hidden; border: 1px solid #ddd; }
+        #ocrProgress { height: 100%; width: 0%; background: #4caf50; transition: width 0.3s; }
+        .footer-info { text-align: center; font-size: 10px; color: #777; margin-top: 20px; padding: 15px; border-top: 1px solid #ddd; line-height: 1.6; }
+        .status-ready { color: #27ae60; font-weight: bold; }
+        .status-waiting { color: #e67e22; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="app-header">Expiration Inventory</div>
+    <div class="container">
+        <div class="card">
+            <h3>📷 Capture Item</h3>
+            <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none;" />
+            <button type="button" class="primary-btn take-pic-btn" id="takePicBtn">📸 Take Picture</button>
+            <button type="button" class="primary-btn" id="scanBtn">Run OCR Scan</button>
+            <img id="imagePreview" style="width:100%; display:none; margin-top:10px; border-radius:6px;" />
+            <div class="progress-container"><div id="ocrProgress" style="height: 100%; width: 0%; background: #4caf50;"></div></div>
+            <div id="ocrStatus">Waiting for system...</div>
+        </div>
 
-    // 1. MONITOR CONNECTION STATUS (THE HEARTBEAT)
-    const checkLibrary = setInterval(() => {
-        if (typeof Tesseract !== 'undefined') {
-            libStatus.textContent = "🟢 Ready to Scan";
-            libStatus.className = "status-ready";
-            ocrStatus.textContent = "Scanner ready.";
-            clearInterval(checkLibrary); 
-        }
-    }, 1000);
+        <div id="confirmCard" class="card hidden">
+            <h3>✅ Confirm</h3>
+            <form id="itemForm">
+                <input type="text" id="itemName" placeholder="Item Name" style="width:100%; padding:10px; margin-bottom:10px;" required />
+                <input type="date" id="expirationDate" style="width:100%; padding:10px; margin-bottom:10px;" required />
+                <button type="submit" class="primary-btn" style="background:#27ae60;">Save to Sheet</button>
+            </form>
+        </div>
 
-    // 2. CAMERA TRIGGER
-    document.getElementById('takePicBtn').onclick = () => {
-        photoInput.click();
-    };
-
-    // 3. SCAN LOGIC
-    scanBtn.onclick = async () => {
-        // Safety check for the "Brain"
-        if (typeof Tesseract === 'undefined') {
-            alert("The scanner 'brain' hasn't arrived yet. Please wait for the green light at the bottom.");
-            return;
-        }
-
-        if (!photoInput.files.length) {
-            alert("Please take a photo first!");
-            return;
-        }
-        
-        const file = photoInput.files[0];
-        imagePreview.src = URL.createObjectURL(file);
-        imagePreview.style.display = 'block';
-        ocrStatus.textContent = "Processing image...";
-        ocrProgress.style.width = '0%';
-
-        try {
-            // Recognize call using Tesseract v2.x method
-            const result = await Tesseract.recognize(file, 'eng', {
-                logger: m => {
-                    ocrStatus.textContent = m.status;
-                    if (m.status === 'recognizing text') {
-                        ocrProgress.style.width = Math.round(m.progress * 100) + '%';
-                    }
-                }
-            });
-            
-            // Populate form and unhide
-            confirmCard.classList.remove('hidden');
-            const itemNameInput = document.getElementById('itemName');
-            
-            // Clean up text for the name field
-            const cleanName = result.data.text.split('\n')[0] || "Scanned Item";
-            itemNameInput.value = cleanName.trim();
-            
-            ocrStatus.textContent = "Success!";
-            confirmCard.scrollIntoView({ behavior: 'smooth' });
-
-        } catch (err) {
-            console.error(err);
-            ocrStatus.textContent = "Scan Error. Please try again.";
-        }
-    };
-
-    // 4. SAVE TO GOOGLE SHEETS
-    form.onsubmit = async (e) => {
-        e.preventDefault();
-        resultEl.textContent = "⌛ Saving to Sheet...";
-        resultEl.style.color = "blue";
-
-        const payload = {
-            itemName: document.getElementById('itemName').value,
-            expirationDate: document.getElementById('expirationDate').value,
-            location: 'Pantry', // Default since selector was removed for speed
-            createdBy: 'pwa-v1.0.6'
-        };
-
-        try {
-            // Google Apps Script requires 'no-cors' for simple POSTs
-            await fetch(`${API_URL}?key=${encodeURIComponent(API_SECRET)}`, {
-                method: 'POST',
-                mode: 'no-cors',
-                body: JSON.stringify(payload)
-            });
-
-            resultEl.textContent = "✅ Saved Successfully!";
-            resultEl.style.color = "green";
-            
-            setTimeout(() => {
-                form.reset();
-                confirmCard.classList.add('hidden');
-                imagePreview.style.display = 'none';
-                ocrStatus.textContent = "Ready to scan...";
-                resultEl.textContent = "";
-                ocrProgress.style.width = '0%';
-            }, 2500);
-
-        } catch (err) {
-            resultEl.textContent = "❌ Network Error.";
-            resultEl.style.color = "red";
-        }
-    };
-});
+        <div class="footer-info">
+            Build: 1.0.7 | Net: <span id="netStatus">Checking...</span><br>
+            Scanner: <span id="libStatus" class="status-waiting">🔴 Connecting...</span>
+        </div>
+    </div>
+    <script src="app.js?v=1.0.7"></script>
+</body>
+</html>
