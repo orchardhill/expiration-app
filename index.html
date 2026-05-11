@@ -6,8 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="manifest" href="manifest.json" />
     
-    <!-- HIGH-SPEED CLOUDFLARE LIBRARY LINK -->
-    <script src="https://cloudflare.com" crossorigin="anonymous"></script>
+    <!-- HIGH-RELIABILITY LIBRARY BUNDLE -->
+    <script src="https://unpkg.com"></script>
 
     <style>
         body { margin: 0; font-family: -apple-system, sans-serif; background: #f4f6f8; color: #333; }
@@ -22,56 +22,39 @@
         .save-btn { background: #3c8f4f; margin-top: 20px; }
         .preview { width: 100%; border-radius: 6px; margin-top: 10px; display: none; }
         .hidden { display: none; }
-        #ocrStatus { margin-top: 10px; font-size: 14px; color: #666; text-align: center; min-height: 20px; font-style: italic; }
+        #ocrStatus { margin-top: 10px; font-size: 14px; color: #666; text-align: center; font-style: italic; }
         .progress-container { width: 100%; height: 12px; background: #eee; border-radius: 10px; margin-top: 10px; overflow: hidden; border: 1px solid #ddd; }
         #ocrProgress { height: 100%; width: 0%; background: #4caf50; transition: width 0.3s; }
-        #result { margin-top: 15px; text-align: center; font-weight: bold; }
     </style>
 </head>
 <body>
-
     <div class="app-header">Expiration Inventory</div>
-    
     <div class="container">
-        <!-- Capture Section -->
         <div class="card">
             <h3>📷 Capture Item</h3>
             <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none;" />
             <button type="button" class="primary-btn take-pic-btn" id="takePicBtn">📸 Take Picture</button>
             <button type="button" class="primary-btn" id="scanBtn">Run OCR Scan</button>
-            
             <img id="imagePreview" class="preview" />
-            
-            <div class="progress-container">
-                <div id="ocrProgress" style="height: 100%; width: 0%; background: #4caf50;"></div>
-            </div>
+            <div class="progress-container"><div id="ocrProgress" style="height: 100%; width: 0%; background: #4caf50;"></div></div>
             <div id="ocrStatus">Ready...</div>
         </div>
-
-        <!-- Confirm Section -->
         <div id="confirmCard" class="card hidden">
             <h3>✅ Confirm Details</h3>
             <form id="itemForm">
-                <label>Item Name</label>
-                <input type="text" id="itemName" name="itemName" required />
-                
-                <label>Expiration Date</label>
-                <input type="date" id="expirationDate" name="expirationDate" required />
-                
+                <label>Item Name</label><input type="text" id="itemName" name="itemName" required />
+                <label>Expiration Date</label><input type="date" id="expirationDate" name="expirationDate" required />
                 <label>Location</label>
                 <select id="location" name="location">
                     <option value="Pantry">Pantry</option>
                     <option value="Fridge">Fridge</option>
                     <option value="Freezer">Freezer</option>
                 </select>
-                
                 <button type="submit" class="primary-btn save-btn">Save to Sheet</button>
             </form>
             <div id="result"></div>
         </div>
     </div>
-
-    <!-- Ensure your app.js logic is in the same folder -->
     <script src="app.js"></script>
 </body>
 </html>
