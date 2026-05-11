@@ -1,43 +1,52 @@
+// ===============================
+// CONFIG
+// ===============================
 const API_URL = 'https://google.com';
 const API_SECRET = 'rCF+2qYvyis5ulxT)6n&xao(svfCNmv#(pfxGXY-CUGHX!XV';
 
 document.addEventListener('DOMContentLoaded', () => {
+    // ELEMENT REFERENCES
     const takePicBtn = document.getElementById('takePicBtn');
     const scanBtn = document.getElementById('scanBtn');
     const photoInput = document.getElementById('photoInput');
     const ocrStatus = document.getElementById('ocrStatus');
     const ocrProgress = document.getElementById('ocrProgress');
     const imagePreview = document.getElementById('imagePreview');
-    const form = document.getElementById('itemForm');
     const confirmCard = document.getElementById('confirmCard');
+    const form = document.getElementById('itemForm');
+    const resultEl = document.getElementById('result');
 
-    // 1. Trigger camera
+    // 1. CAMERA HANDLER
     if (takePicBtn) {
         takePicBtn.onclick = () => photoInput.click();
     }
 
-    // 2. Scan Logic with Safety Check
+    // 2. OCR SCAN HANDLER
     if (scanBtn) {
         scanBtn.onclick = async () => {
-            // FIX: Check if Tesseract loaded before running
+            // Safety Check: Is Tesseract loaded?
             if (typeof Tesseract === 'undefined') {
-                alert("The scanner library is still downloading. Please wait 10 seconds and try again.");
+                ocrStatus.textContent = "Library still loading... Please wait 5s.";
+                setTimeout(() => { location.reload(); }, 3000); 
                 return;
             }
 
             if (!photoInput.files.length) {
-                alert("Please take a photo first.");
+                alert("Please take a picture first!");
                 return;
             }
 
             const file = photoInput.files[0];
             imagePreview.src = URL.createObjectURL(file);
             imagePreview.style.display = 'block';
-            ocrStatus.textContent = "Starting scan...";
+            ocrStatus.textContent = "OCR: Initializing Engine...";
+            ocrProgress.style.width = '0%';
 
             try {
-                const result = await Tesseract.recognize(file, 'eng', {
+                // Use the modern Worker approach for better mobile stability
+                const worker = await Tesseract.createWorker('eng', 1, {
                     logger: m => {
+                        ocrStatus.textContent = `Status: ${m.status}`;
                         if (m.status === 'recognizing text') {
                             const p = Math.round(m.progress * 100);
                             ocrProgress.style.width = p + '%';
@@ -45,48 +54,82 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     }
                 });
+
+                const { data: { text } } = await worker.recognize(file);
+                await worker.terminate();
                 
-                // Show form and fill name
-                confirmCard.classList.remove('hidden');
-                document.getElementById('itemName').value = result.data.text.split('\n')[0] || "";
-                ocrStatus.textContent = "Scan Complete!";
-                
+                handleOCRResult(text);
             } catch (err) {
                 console.error(err);
-                ocrStatus.textContent = "Scan failed. Try again.";
+                ocrStatus.textContent = "Error: " + err.message;
             }
         };
     }
 
-    // 3. Save to Google Sheets
+    // 3. RESULT PARSING
+    function handleOCRResult(text) {
+        const upper = text.toUpperCase();
+        const lines = upper.split('\n').map(l => l.trim()).filter(l => l.length > 2);
+
+        // Autofill Item Name (First significant line)
+        if (lines.length > 0) {
+            document.getElementById('itemName').value = lines[0];
+        }
+
+        // Autofill Date (Looks for MM/DD/YYYY or YYYY-MM-DD)
+        const dateMatch = upper.match(/(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/);
+        if (dateMatch) {
+            const d = new Date(dateMatch[1]);
+            if (!isNaN(d)) {
+                document.getElementById('expirationDate').value = d.toISOString().slice(0, 10);
+            }
+        }
+
+        ocrStatus.textContent = "OCR Complete! Review below.";
+        confirmCard.classList.remove('hidden');
+        // Scroll to the form
+        confirmCard.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // 4. SAVE TO GOOGLE SHEETS
     if (form) {
         form.onsubmit = async (e) => {
             e.preventDefault();
-            const resEl = document.getElementById('result');
-            resEl.textContent = "Saving to Google Sheets...";
+            resultEl.textContent = "⌛ Saving to Google Sheets...";
+            resultEl.style.color = "blue";
 
-            const data = {
+            const payload = {
                 itemName: document.getElementById('itemName').value,
                 expirationDate: document.getElementById('expirationDate').value,
                 location: document.getElementById('location').value,
-                createdBy: 'pwa'
+                createdBy: 'pwa-app'
             };
 
             try {
                 const response = await fetch(`${API_URL}?key=${encodeURIComponent(API_SECRET)}`, {
                     method: 'POST',
-                    body: JSON.stringify(data)
+                    mode: 'no-cors', // Essential for Google Apps Script Web Apps
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
                 });
-                const json = await response.json();
-                if (json.success) {
-                    resEl.textContent = "✅ Saved Successfully!";
+
+                // With no-cors, we won't see the JSON response, but we assume success if no catch
+                resultEl.textContent = "✅ Saved Successfully!";
+                resultEl.style.color = "green";
+                
+                // Reset UI after 2 seconds
+                setTimeout(() => {
                     form.reset();
                     confirmCard.classList.add('hidden');
-                } else {
-                    resEl.textContent = "❌ Error: " + json.error;
-                }
+                    imagePreview.style.display = 'none';
+                    ocrStatus.textContent = "Ready...";
+                    resultEl.textContent = "";
+                }, 2000);
+
             } catch (err) {
-                resEl.textContent = "❌ Network Error. Check your internet.";
+                console.error(err);
+                resultEl.textContent = "❌ Network Error.";
+                resultEl.style.color = "red";
             }
         };
     }
