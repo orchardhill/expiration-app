@@ -4,6 +4,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const photoInput = document.getElementById('photoInput');
     const ocrStatus = document.getElementById('ocrStatus');
     const itemForm = document.getElementById('itemForm');
+    const ocrProgress = document.getElementById('ocrProgress');
+
+    // Your Specific Google Script URL
+    const GOOGLE_SCRIPT_URL = 'https://google.com';
 
     // --- 1. MONITOR LIBRARY ---
     const checkLibrary = setInterval(() => {
@@ -19,23 +23,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 3. RUN OCR SCAN ---
     scanBtn.onclick = async () => {
-        if (typeof Tesseract === 'undefined') return alert("Tesseract library not loaded yet!");
-        if (!photoInput.files.length) return alert("Take a photo first!");
+        if (typeof Tesseract === 'undefined') return alert("OCR Library still loading...");
+        if (!photoInput.files.length) return alert("Please take a photo first!");
 
         const file = photoInput.files[0];
         document.getElementById('imagePreview').src = URL.createObjectURL(file);
         document.getElementById('imagePreview').style.display = 'block';
         
-        ocrStatus.textContent = "⚡ Initializing...";
-        document.getElementById('ocrProgress').style.width = '0%';
+        ocrStatus.textContent = "⚡ Initializing Engine...";
+        ocrProgress.style.width = '0%';
 
         try {
-            // Tesseract.js v5 Syntax
             const worker = await Tesseract.createWorker('eng', 1, {
                 logger: m => {
                     if (m.status === 'recognizing text') {
-                        ocrStatus.textContent = "Scanning...";
-                        document.getElementById('ocrProgress').style.width = Math.round(m.progress * 100) + '%';
+                        ocrStatus.textContent = "Scanning Text...";
+                        ocrProgress.style.width = Math.round(m.progress * 100) + '%';
                     } else {
                         ocrStatus.textContent = m.status;
                     }
@@ -45,15 +48,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const { data: { text } } = await worker.recognize(file);
             await worker.terminate();
 
-            // Clean up text: remove newlines and shorten
-            const cleanText = text.replace(/\n/g, ' ').trim().substring(0, 40);
+            // Cleanup text: Remove extra lines/spaces
+            const cleanText = text.replace(/[\r\n]+/gm, " ").trim().substring(0, 50);
             
             document.getElementById('confirmCard').classList.remove('hidden');
             document.getElementById('itemName').value = cleanText;
-            ocrStatus.textContent = "Done!";
+            ocrStatus.textContent = "Scan Complete!";
         } catch (e) {
             console.error(e);
-            ocrStatus.textContent = "Error: " + e.message;
+            ocrStatus.textContent = "OCR Error: " + e.message;
         }
     };
 
@@ -63,31 +66,33 @@ document.addEventListener('DOMContentLoaded', () => {
         const itemName = document.getElementById('itemName').value;
         const submitBtn = e.target.querySelector('button');
         
-        // REPLACE THIS with your actual Google Apps Script Web App URL
-        const GOOGLE_SCRIPT_URL = 'YOUR_APPS_SCRIPT_URL_HERE';
-
         submitBtn.disabled = true;
-        submitBtn.textContent = "Saving...";
+        submitBtn.textContent = "Sending...";
 
         try {
-            if (GOOGLE_SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL_HERE') {
-                alert(`Dev Mode: Item "${itemName}" would be saved now.`);
-            } else {
-                await fetch(GOOGLE_SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    body: JSON.stringify({ itemName: itemName, date: new Date().toLocaleDateString() })
-                });
-                alert('Saved successfully!');
-            }
+            // Using 'no-cors' mode for Google Apps Script
+            await fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                cache: 'no-cache',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    itemName: itemName, 
+                    timestamp: new Date().toLocaleString() 
+                })
+            });
+
+            alert('✅ Saved to Google Sheets!');
             
             // Reset UI
             document.getElementById('confirmCard').classList.add('hidden');
             document.getElementById('imagePreview').style.display = 'none';
-            document.getElementById('ocrProgress').style.width = '0%';
+            ocrProgress.style.width = '0%';
             itemForm.reset();
+            ocrStatus.textContent = "Ready...";
         } catch (err) {
-            alert('Save error: ' + err.message);
+            console.error(err);
+            alert('Save failed: ' + err.message);
         } finally {
             submitBtn.disabled = false;
             submitBtn.textContent = "Save to Sheet";
