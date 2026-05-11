@@ -6,8 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="manifest" href="manifest.json" />
     
-    <!-- FULL PATH LIBRARIES - DO NOT CHANGE THESE -->
-    <script src="https://jsdelivr.net"></script>
+    <!-- STABLE LIBRARY LINKS -->
+    <script src="https://cloudflare.com"></script>
     <script src="https://unpkg.com"></script>
 
     <style>
@@ -34,6 +34,7 @@
     <div class="app-header">Expiration Inventory</div>
     
     <div class="container">
+        <!-- Capture Section -->
         <div class="card">
             <h3>📷 Capture Item</h3>
             <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none;" />
@@ -48,6 +49,7 @@
             <div id="ocrStatus">Ready...</div>
         </div>
 
+        <!-- Confirm Section -->
         <div id="confirmCard" class="card hidden">
             <h3>✅ Confirm Details</h3>
             <form id="itemForm">
@@ -78,12 +80,6 @@
     </div>
 
     <script src="app.js"></script>
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('service-worker.js');
-            });
-        }
-    </script>
+    <!-- Temporarily removed Service Worker script to ensure fresh loads -->
 </body>
 </html>
