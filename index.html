@@ -2,12 +2,12 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <title>Exp Tracker v1.1.2</title>
+    <title>Exp Tracker v1.1.3</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="manifest" href="manifest.json" />
     
-    <!-- STABLE LIBRARY LINK -->
-    <script src="https://cloudflare.com"></script>
+    <!-- ALTERNATIVE STABLE LIBRARY LINK -->
+    <script src="https://unpkg.com"></script>
     
     <style>
         body { margin: 0; font-family: -apple-system, sans-serif; background: #f4f6f8; color: #333; }
@@ -48,9 +48,11 @@
         </div>
 
         <div class="footer-info">
-            Build: <span id="appVersion">1.1.2</span> | Scanner: <span id="libStatus" class="status-waiting">🔴 Connecting...</span>
+            Build: <span id="appVersion">1.1.3</span> | Scanner: <span id="libStatus" class="status-waiting">🔴 Connecting...</span>
         </div>
     </div>
-    <script src="app.js?v=1.1.2"></script>
+    
+    <!-- Cache-busting for app.js -->
+    <script src="app.js?v=1.1.3"></script>
 </body>
 </html>
