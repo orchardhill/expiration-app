@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- MOVED TO THE VERY TOP TO PREVENT "NOT DEFINED" ERROR -->
+    <script src="https://cloudflare.com"></script>
+    
     <meta charset="UTF-8" />
-    <title>Exp Tracker v1.0.3</title>
+    <title>Exp Tracker v1.0.4</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="manifest" href="manifest.json" />
-    
-    <!-- LATEST STABLE BUNDLE -->
-    <script src="https://jsdelivr.net"></script>
 
     <style>
         body { margin: 0; font-family: -apple-system, sans-serif; background: #f4f6f8; color: #333; }
@@ -18,7 +18,7 @@
         .take-pic-btn { background: #2c3e50; }
         .hidden { display: none; }
         #ocrStatus { margin-top: 10px; font-size: 14px; color: #666; text-align: center; min-height: 20px; }
-        .progress-container { width: 100%; height: 12px; background: #eee; border-radius: 10px; margin-top: 10px; overflow: hidden; border: 1px solid #ddd; }
+        .progress-container { width: 100%; height: 12px; background: #eee; border-radius: 10px; margin-top: 10px; overflow: hidden; }
         #ocrProgress { height: 100%; width: 0%; background: #4caf50; transition: width 0.3s; }
     </style>
 </head>
@@ -46,9 +46,9 @@
         </div>
 
         <div style="text-align:center; font-size:10px; color:#999; margin-top:20px;">
-            Build Version: <span id="versionLabel">1.0.3</span>
+            Build Version: <span id="versionLabel">1.0.4</span>
         </div>
     </div>
-    <script src="app.js?v=1.0.3"></script>
+    <script src="app.js?v=1.0.4"></script>
 </body>
 </html>
