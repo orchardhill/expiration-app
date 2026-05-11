@@ -1,7 +1,15 @@
+// ===============================
+// CONFIG
+// ===============================
+const APP_VERSION = '1.0.1'; // Update this manually with each GitHub push!
 const API_URL = 'https://google.com';
 const API_SECRET = 'rCF+2qYvyis5ulxT)6n&xao(svfCNmv#(pfxGXY-CUGHX!XV';
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Set version label
+    document.getElementById('versionLabel').textContent = APP_VERSION;
+
+    // Elements
     const takePicBtn = document.getElementById('takePicBtn');
     const scanBtn = document.getElementById('scanBtn');
     const photoInput = document.getElementById('photoInput');
@@ -10,29 +18,30 @@ document.addEventListener('DOMContentLoaded', () => {
     const imagePreview = document.getElementById('imagePreview');
     const confirmCard = document.getElementById('confirmCard');
     const form = document.getElementById('itemForm');
+    const resultEl = document.getElementById('result');
 
+    // Camera Trigger
     if (takePicBtn) takePicBtn.onclick = () => photoInput.click();
 
+    // OCR Trigger
     if (scanBtn) {
         scanBtn.onclick = async () => {
             const TESS = window.Tesseract;
             
             if (!TESS) {
-                ocrStatus.textContent = "Connecting to scanner brain... (takes 30s first time)";
-                // Try again in 2 seconds automatically
-                setTimeout(() => scanBtn.click(), 2000);
+                ocrStatus.textContent = "⌛ Still connecting to scanner brain... Wait 10s.";
                 return;
             }
 
             if (!photoInput.files.length) {
-                alert("Take a picture first!");
+                alert("Please take a picture first!");
                 return;
             }
 
             const file = photoInput.files[0];
             imagePreview.src = URL.createObjectURL(file);
             imagePreview.style.display = 'block';
-            ocrStatus.textContent = "⚡ Engine Starting...";
+            ocrStatus.textContent = "⚡ Starting Engine...";
 
             try {
                 const result = await TESS.recognize(file, 'eng', {
@@ -47,33 +56,45 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 });
                 
+                // Show form and populate Name
                 confirmCard.classList.remove('hidden');
                 document.getElementById('itemName').value = result.data.text.split('\n')[0] || "";
-                ocrStatus.textContent = "✅ Success!";
+                ocrStatus.textContent = "✅ Scan Complete!";
+                confirmCard.scrollIntoView({ behavior: 'smooth' });
+
             } catch (err) {
-                ocrStatus.textContent = "❌ Error: " + err.message;
+                ocrStatus.textContent = "❌ OCR Error: " + err.message;
             }
         };
     }
 
-    form.onsubmit = async (e) => {
-        e.preventDefault();
-        const res = document.getElementById('result');
-        res.textContent = "Saving...";
-        const data = {
-            itemName: document.getElementById('itemName').value,
-            expirationDate: document.getElementById('expirationDate').value,
-            location: document.getElementById('location').value
+    // Save Logic
+    if (form) {
+        form.onsubmit = async (e) => {
+            e.preventDefault();
+            resultEl.textContent = "⌛ Saving to Sheet...";
+            
+            const payload = {
+                itemName: document.getElementById('itemName').value,
+                expirationDate: document.getElementById('expirationDate').value,
+                location: document.getElementById('location').value
+            };
+
+            try {
+                await fetch(`${API_URL}?key=${encodeURIComponent(API_SECRET)}`, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: JSON.stringify(payload)
+                });
+                resultEl.textContent = "✅ Saved Successfully!";
+                setTimeout(() => {
+                    form.reset();
+                    confirmCard.classList.add('hidden');
+                    resultEl.textContent = "";
+                }, 2500);
+            } catch (err) {
+                resultEl.textContent = "❌ Network Error.";
+            }
         };
-        try {
-            await fetch(`${API_URL}?key=${encodeURIComponent(API_SECRET)}`, {
-                method: 'POST',
-                mode: 'no-cors',
-                body: JSON.stringify(data)
-            });
-            res.textContent = "✅ Saved!";
-            form.reset();
-            setTimeout(() => { confirmCard.classList.add('hidden'); res.textContent = ""; }, 2000);
-        } catch (e) { res.textContent = "❌ Error."; }
-    };
+    }
 });
