@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="manifest" href="manifest.json" />
     
-    <!-- Correct Library Links -->
+    <!-- Libraries -->
     <script src="https://jsdelivr.net"></script>
     <script src="https://unpkg.com"></script>
 
@@ -36,8 +36,9 @@
     <div class="app-header">Expiration Inventory</div>
     
     <div class="container">
+        <!-- Capture Section -->
         <div class="card">
-            <h3>📷 Scan Label</h3>
+            <h3>📷 Capture Item</h3>
             
             <!-- Hidden file input -->
             <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none;" />
@@ -53,9 +54,10 @@
             <div class="progress-container">
                 <div id="ocrProgress" style="height: 100%; width: 0%; background: #4caf50;"></div>
             </div>
-            <div id="ocrStatus">Ready to scan...</div>
+            <div id="ocrStatus">Ready...</div>
         </div>
 
+        <!-- Confirm Section -->
         <div id="confirmCard" class="card hidden">
             <h3>✅ Confirm Details</h3>
             <form id="itemForm">
@@ -91,17 +93,22 @@
             <div id="result"></div>
         </div>
 
+        <!-- Debugging section -->
         <div id="rawTextCard" class="card hidden">
             <h3>🔍 Raw Scan Data</h3>
             <textarea id="rawText" rows="4" readonly></textarea>
         </div>
     </div>
 
+    <!-- Scripts -->
     <script src="app.js"></script>
     <script>
+        // PWA Service Worker Registration
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('service-worker.js')
-            .catch(err => console.log("Service Worker failed", err));
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('service-worker.js')
+                .catch(err => console.error("Service Worker registration failed", err));
+            });
         }
     </script>
 </body>
