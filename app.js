@@ -1,36 +1,26 @@
 document.addEventListener('DOMContentLoaded', () => {
     const libStatus = document.getElementById('libStatus');
-    const netStatus = document.getElementById('netStatus');
     const scanBtn = document.getElementById('scanBtn');
     const photoInput = document.getElementById('photoInput');
     const ocrStatus = document.getElementById('ocrStatus');
 
-    // 1. CHECK NETWORK TYPE
-    function updateNetStatus() {
-        const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-        const type = conn ? conn.effectiveType || conn.type : "unknown";
-        netStatus.textContent = navigator.onLine ? `Online (${type})` : "OFFLINE";
-    }
-    updateNetStatus();
-    window.addEventListener('online', updateNetStatus);
-    window.addEventListener('offline', updateNetStatus);
-
-    // 2. MONITOR LIBRARY STATUS
+    // 1. HEARTBEAT CHECK
     const checkLibrary = setInterval(() => {
-        if (typeof Tesseract !== 'undefined') {
+        if (window.Tesseract) {
             libStatus.textContent = "🟢 Ready";
             libStatus.className = "status-ready";
-            ocrStatus.textContent = "Scanner ready.";
+            ocrStatus.textContent = "Scanner connected.";
             clearInterval(checkLibrary);
         }
-    }, 1000);
+    }, 500); // Check every half-second
 
-    // 3. UI HANDLERS
+    // 2. CAMERA TRIGGER
     document.getElementById('takePicBtn').onclick = () => photoInput.click();
 
+    // 3. SCAN LOGIC
     scanBtn.onclick = async () => {
-        if (typeof Tesseract === 'undefined') {
-            alert("Still loading the scanner brain. Please wait for the Green 'Ready' status.");
+        if (!window.Tesseract) {
+            alert("Scanner brain is still downloading. Please wait for the Green status.");
             return;
         }
         if (!photoInput.files.length) return alert("Take a photo first!");
@@ -38,10 +28,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const file = photoInput.files[0];
         document.getElementById('imagePreview').src = URL.createObjectURL(file);
         document.getElementById('imagePreview').style.display = 'block';
-        ocrStatus.textContent = "Initializing...";
+        ocrStatus.textContent = "Initializing brain...";
 
         try {
-            const result = await Tesseract.recognize(file, 'eng', {
+            const { data: { text } } = await Tesseract.recognize(file, 'eng', {
                 logger: m => {
                     ocrStatus.textContent = m.status;
                     if (m.status === 'recognizing text') {
@@ -49,11 +39,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
             });
+            
             document.getElementById('confirmCard').classList.remove('hidden');
-            document.getElementById('itemName').value = result.data.text.substring(0, 30).trim();
-            ocrStatus.textContent = "Success!";
+            document.getElementById('itemName').value = text.substring(0, 30).trim();
+            ocrStatus.textContent = "Scan Complete!";
         } catch (e) {
-            ocrStatus.textContent = "Error. Try again.";
+            ocrStatus.textContent = "Error. Please try again.";
         }
     };
 });
