@@ -5,10 +5,8 @@
     <title>Exp Tracker v1.1.0</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="manifest" href="manifest.json" />
-    
-    <!-- DIRECT BUNDLE LINK -->
+    <!-- FIXED TESSERACT BUNDLE LINK -->
     <script src="https://jsdelivr.net"></script>
-
     <style>
         body { margin: 0; font-family: -apple-system, sans-serif; background: #f4f6f8; color: #333; }
         .app-header { background: #3f6fb5; color: white; padding: 16px; font-weight: bold; text-align: center; }
@@ -23,6 +21,7 @@
         .footer-info { text-align: center; font-size: 10px; color: #777; margin-top: 20px; padding: 15px; border-top: 1px solid #ddd; }
         .status-ready { color: #27ae60; font-weight: bold; }
         .status-waiting { color: #e67e22; font-weight: bold; }
+        input[type="text"] { box-sizing: border-box; }
     </style>
 </head>
 <body>
@@ -34,9 +33,10 @@
             <button type="button" class="primary-btn take-pic-btn" id="takePicBtn">📸 Take Picture</button>
             <button type="button" class="primary-btn" id="scanBtn">Run OCR Scan</button>
             <img id="imagePreview" style="width:100%; display:none; margin-top:10px; border-radius:6px;" />
-            <div class="progress-container"><div id="ocrProgress" style="height: 100%; width: 0%; background: #4caf50;"></div></div>
+            <div class="progress-container"><div id="ocrProgress"></div></div>
             <div id="ocrStatus">Ready...</div>
         </div>
+
         <div id="confirmCard" class="card hidden">
             <h3>✅ Confirm Details</h3>
             <form id="itemForm">
@@ -44,6 +44,7 @@
                 <button type="submit" class="primary-btn" style="background:#27ae60;">Save to Sheet</button>
             </form>
         </div>
+
         <div class="footer-info">
             Build: 1.1.0 | Scanner: <span id="libStatus" class="status-waiting">🔴 Connecting...</span>
         </div>
