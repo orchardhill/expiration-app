@@ -15,26 +15,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (scanBtn) {
         scanBtn.onclick = async () => {
-            // FIX: Use the window object to find Tesseract
             const TESS = window.Tesseract;
             
             if (!TESS) {
-                ocrStatus.textContent = "⌛ Library still downloading... check your Wi-Fi.";
+                ocrStatus.textContent = "Connecting to scanner brain... (takes 30s first time)";
+                // Try again in 2 seconds automatically
+                setTimeout(() => scanBtn.click(), 2000);
                 return;
             }
 
             if (!photoInput.files.length) {
-                alert("Please take a picture first!");
+                alert("Take a picture first!");
                 return;
             }
 
             const file = photoInput.files[0];
             imagePreview.src = URL.createObjectURL(file);
             imagePreview.style.display = 'block';
-            ocrStatus.textContent = "⚡ Initializing Scanner...";
+            ocrStatus.textContent = "⚡ Engine Starting...";
 
             try {
-                // Using a more compatible mobile method
                 const result = await TESS.recognize(file, 'eng', {
                     logger: m => {
                         if (m.status === 'recognizing text') {
@@ -42,12 +42,11 @@ document.addEventListener('DOMContentLoaded', () => {
                             ocrProgress.style.width = p + '%';
                             ocrStatus.textContent = `Analyzing: ${p}%`;
                         } else {
-                            ocrStatus.textContent = m.status + "...";
+                            ocrStatus.textContent = "Status: " + m.status;
                         }
                     }
                 });
                 
-                // Show form
                 confirmCard.classList.remove('hidden');
                 document.getElementById('itemName').value = result.data.text.split('\n')[0] || "";
                 ocrStatus.textContent = "✅ Success!";
@@ -57,25 +56,24 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    if (form) {
-        form.onsubmit = async (e) => {
-            e.preventDefault();
-            const res = document.getElementById('result');
-            res.textContent = "Saving...";
-            const data = {
-                itemName: document.getElementById('itemName').value,
-                expirationDate: document.getElementById('expirationDate').value,
-                location: document.getElementById('location').value
-            };
-            try {
-                await fetch(`${API_URL}?key=${encodeURIComponent(API_SECRET)}`, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    body: JSON.stringify(data)
-                });
-                res.textContent = "✅ Saved!";
-                form.reset();
-            } catch (e) { res.textContent = "❌ Error."; }
+    form.onsubmit = async (e) => {
+        e.preventDefault();
+        const res = document.getElementById('result');
+        res.textContent = "Saving...";
+        const data = {
+            itemName: document.getElementById('itemName').value,
+            expirationDate: document.getElementById('expirationDate').value,
+            location: document.getElementById('location').value
         };
-    }
+        try {
+            await fetch(`${API_URL}?key=${encodeURIComponent(API_SECRET)}`, {
+                method: 'POST',
+                mode: 'no-cors',
+                body: JSON.stringify(data)
+            });
+            res.textContent = "✅ Saved!";
+            form.reset();
+            setTimeout(() => { confirmCard.classList.add('hidden'); res.textContent = ""; }, 2000);
+        } catch (e) { res.textContent = "❌ Error."; }
+    };
 });
