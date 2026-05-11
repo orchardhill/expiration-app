@@ -1,157 +1,71 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Expiration Inventory</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <!-- PWA Manifest -->
-  <link rel="manifest" href="manifest.json" />
-
-  <!-- Tesseract OCR -->
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #f4f6f8;
-    }
-
-    .app-header {
-      background: #3f6fb5;
-      color: white;
-      padding: 16px;
-      font-size: 20px;
-      font-weight: bold;
-    }
-
-    .container {
-      padding: 16px;
-    }
-
-    .card {
-      background: white;
-      border-radius: 6px;
-      padding: 16px;
-      margin-bottom: 16px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-
-    h3 {
-      margin-top: 0;
-    }
-
-    label {
-      display: block;
-      margin-bottom: 10px;
-    }
-
-    input, select, textarea {
-      width: 100%;
-      padding: 8px;
-      margin-top: 4px;
-      box-sizing: border-box;
-    }
-
-    textarea {
-      height: 100px;
-      resize: none;
-    }
-
-    .primary-btn {
-      background: #3f6fb5;
-      color: white;
-      padding: 12px;
-      width: 100%;
-      border: none;
-      border-radius: 4px;
-      font-size: 16px;
-      margin-top: 8px;
-    }
-
-    .confirm-btn {
-      background: #3c8f4f;
-      color: white;
-      padding: 12px;
-      flex: 1;
-      border: none;
-      border-radius: 4px;
-      font-size: 16px;
-    }
-
-    .secondary-btn {
-      background: #ccc;
-      padding: 12px;
-      flex: 1;
-      border: none;
-      border-radius: 4px;
-      font-size: 16px;
-    }
-
-    .button-row {
-      display: flex;
-      gap: 10px;
-      margin-top: 12px;
-    }
-
-    .preview {
-      width: 100%;
-      margin-top: 12px;
-      border-radius: 4px;
-      display: none;
-    }
-
-    .progress-container {
-      width: 100%;
-      height: 8px;
-      background: #ddd;
-      margin-top: 10px;
-      border-radius: 4px;
-      overflow: hidden;
-    }
-
-    .progress-bar {
-      height: 100%;
-      width: 0%;
-      background: #4caf50;
-    }
-
-    .hidden {
-      display: none;
-    }
-  </style>
-</head>
-
 <body>
+    <div class="app-header">Expiration Inventory</div>
+    
+    <div class="container">
+        <!-- Scan Section -->
+        <div class="card">
+            <h3>Scan Label (Auto-Fill)</h3>
+            <input type="file" id="photoInput" accept="image/*" capture="environment" />
+            <button type="button" class="primary-btn" id="scanBtn">📷 Scan Label (Auto-Fill)</button>
+            <button type="button" class="primary-btn barcode-btn" id="barcodeBtn" style="background:#607d8b; margin-top:10px;">🔍 Scan Barcode</button>
+            
+            <video id="barcodeVideo" style="width:100%; display:none; margin-top:10px;"></video>
+            <img id="imagePreview" class="preview" style="width:100%; display:none; margin-top:10px;" />
+            
+            <div class="progress-container">
+                <div class="progress-bar" id="ocrProgress"></div>
+            </div>
+            <div id="ocrStatus" style="margin-top:10px;"></div>
+        </div>
 
-  <!-- App Header -->
-  <div class="app-header">Add Item</div>
+        <!-- THIS WAS THE MISSING PART: Confirm Section -->
+        <div id="confirmCard" class="card hidden">
+            <h3>Confirm Details</h3>
+            <form id="itemForm">
+                <label>Item Name</label>
+                <input type="text" name="itemName" id="itemName" required />
 
-  <div class="container">
+                <div style="display: flex; gap: 10px;">
+                    <div style="flex: 1;">
+                        <label>Qty</label>
+                        <input type="number" name="quantity" id="quantity" step="0.1" />
+                    </div>
+                    <div style="flex: 1;">
+                        <label>Unit</label>
+                        <input type="text" name="unit" id="unit" placeholder="oz, lb, ct" />
+                    </div>
+                </div>
 
-    <!-- Scan Label Section -->
-    <div class="card">
-      <h3>Scan Label (Auto‑Fill)</h3>
+                <label>Expiration Date</label>
+                <input type="date" name="expirationDate" id="expirationDate" required />
 
-      <input
-        type="file"
-        id="photoInput"
-        accept="image/*"
-        capture="environment"
-      />
+                <label>Location</label>
+                <select name="location" id="location">
+                    <option value="Pantry">Pantry</option>
+                    <option value="Fridge">Fridge</option>
+                    <option value="Freezer">Freezer</option>
+                </select>
 
-      <button type="button" class="primary-btn" id="scanBtn">
-        📷 Scan Label (Auto‑Fill)
-      </button>
+                <label>Assigned To</label>
+                <input type="text" name="assignedTo" id="assignedTo" />
 
-      <img id="imagePreview" class="preview" />
+                <button type="submit" class="primary-btn" style="background: #3c8f4f; margin-top:20px;">✅ Save to Sheet</button>
+            </form>
+            <div id="result" style="margin-top:15px; text-align:center; font-weight:bold;"></div>
+        </div>
 
-      <div class="progress-container">
-        <div class="progress-bar" id="ocrProgress"></div>
-      </div>
-
-      <div id="ocrStatus"></div>
+        <!-- Raw Data Section (For Debugging) -->
+        <div id="rawTextCard" class="card hidden">
+            <h3>Raw Scan Data</h3>
+            <textarea id="rawText" style="width:100%; height:100px;" readonly></textarea>
+        </div>
     </div>
 
-    <!-- Confirm Section -->
+    <script src="app.js"></script>
+    <script>
+        // PWA Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js');
+        }
+    </script>
+</body>
