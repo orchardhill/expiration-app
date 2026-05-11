@@ -1,4 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
+    const APP_VERSION = "1.1.1"; // UPDATE THIS EVERY TIME YOU PUSH
+    
     const libStatus = document.getElementById('libStatus');
     const scanBtn = document.getElementById('scanBtn');
     const photoInput = document.getElementById('photoInput');
@@ -6,8 +8,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const itemForm = document.getElementById('itemForm');
     const ocrProgress = document.getElementById('ocrProgress');
 
-    // Your Specific Google Script URL
     const GOOGLE_SCRIPT_URL = 'https://google.com';
+
+    // Update the UI version display
+    document.getElementById('appVersion').textContent = APP_VERSION;
 
     // --- 1. MONITOR LIBRARY ---
     const checkLibrary = setInterval(() => {
@@ -23,24 +27,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 3. RUN OCR SCAN ---
     scanBtn.onclick = async () => {
-        if (typeof Tesseract === 'undefined') return alert("OCR Library still loading...");
-        if (!photoInput.files.length) return alert("Please take a photo first!");
+        if (typeof Tesseract === 'undefined') return alert(`[v${APP_VERSION}] OCR Library not loaded!`);
+        if (!photoInput.files.length) return alert("Take a photo first!");
 
         const file = photoInput.files[0];
         document.getElementById('imagePreview').src = URL.createObjectURL(file);
         document.getElementById('imagePreview').style.display = 'block';
         
-        ocrStatus.textContent = "⚡ Initializing Engine...";
+        ocrStatus.textContent = "⚡ Starting Engine...";
         ocrProgress.style.width = '0%';
 
         try {
             const worker = await Tesseract.createWorker('eng', 1, {
                 logger: m => {
                     if (m.status === 'recognizing text') {
-                        ocrStatus.textContent = "Scanning Text...";
+                        ocrStatus.textContent = "Analyzing Image...";
                         ocrProgress.style.width = Math.round(m.progress * 100) + '%';
-                    } else {
-                        ocrStatus.textContent = m.status;
                     }
                 }
             });
@@ -48,15 +50,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const { data: { text } } = await worker.recognize(file);
             await worker.terminate();
 
-            // Cleanup text: Remove extra lines/spaces
-            const cleanText = text.replace(/[\r\n]+/gm, " ").trim().substring(0, 50);
+            const cleanText = text.replace(/[\r\n]+/gm, " ").trim().substring(0, 40);
             
             document.getElementById('confirmCard').classList.remove('hidden');
             document.getElementById('itemName').value = cleanText;
             ocrStatus.textContent = "Scan Complete!";
         } catch (e) {
-            console.error(e);
-            ocrStatus.textContent = "OCR Error: " + e.message;
+            ocrStatus.textContent = "Error: " + e.message;
         }
     };
 
@@ -67,32 +67,27 @@ document.addEventListener('DOMContentLoaded', () => {
         const submitBtn = e.target.querySelector('button');
         
         submitBtn.disabled = true;
-        submitBtn.textContent = "Sending...";
+        submitBtn.textContent = "Saving...";
 
         try {
-            // Using 'no-cors' mode for Google Apps Script
             await fetch(GOOGLE_SCRIPT_URL, {
                 method: 'POST',
                 mode: 'no-cors',
-                cache: 'no-cache',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
                     itemName: itemName, 
+                    version: APP_VERSION,
                     timestamp: new Date().toLocaleString() 
                 })
             });
 
-            alert('✅ Saved to Google Sheets!');
+            alert(`✅ Saved Successfully (Build ${APP_VERSION})`);
             
-            // Reset UI
             document.getElementById('confirmCard').classList.add('hidden');
             document.getElementById('imagePreview').style.display = 'none';
-            ocrProgress.style.width = '0%';
             itemForm.reset();
             ocrStatus.textContent = "Ready...";
         } catch (err) {
-            console.error(err);
-            alert('Save failed: ' + err.message);
+            alert(`[v${APP_VERSION}] Save Error: ${err.message}`);
         } finally {
             submitBtn.disabled = false;
             submitBtn.textContent = "Save to Sheet";
