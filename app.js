@@ -1,40 +1,33 @@
 document.addEventListener('DOMContentLoaded', () => {
     const libStatus = document.getElementById('libStatus');
-    const log = document.getElementById('log');
     const scanBtn = document.getElementById('scanBtn');
     const photoInput = document.getElementById('photoInput');
     const ocrStatus = document.getElementById('ocrStatus');
 
-    // 1. HEARTBEAT CHECK
+    // 1. MONITOR LIBRARY
     const checkLibrary = setInterval(() => {
-        if (window.Tesseract) {
+        if (typeof Tesseract !== 'undefined') {
             libStatus.textContent = "🟢 Ready";
             libStatus.className = "status-ready";
-            log.textContent = "Log: Tesseract loaded successfully.";
             clearInterval(checkLibrary);
-        } else {
-            log.textContent = "Log: Still waiting for library...";
         }
     }, 1000);
 
-    // 2. CAMERA TRIGGER
+    // 2. CAMERA
     document.getElementById('takePicBtn').onclick = () => photoInput.click();
 
-    // 3. SCAN LOGIC
+    // 3. SCAN
     scanBtn.onclick = async () => {
-        if (!window.Tesseract) {
-            alert("Scanner not ready yet.");
-            return;
-        }
+        if (typeof Tesseract === 'undefined') return alert("Still loading...");
         if (!photoInput.files.length) return alert("Take a photo first!");
         
         const file = photoInput.files[0];
         document.getElementById('imagePreview').src = URL.createObjectURL(file);
         document.getElementById('imagePreview').style.display = 'block';
-        ocrStatus.textContent = "Connecting to Engine...";
+        ocrStatus.textContent = "⚡ Starting...";
 
         try {
-            const { data: { text } } = await Tesseract.recognize(file, 'eng', {
+            const worker = await Tesseract.createWorker('eng', 1, {
                 logger: m => {
                     ocrStatus.textContent = m.status;
                     if (m.status === 'recognizing text') {
@@ -42,13 +35,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
             });
-            
+            const { data: { text } } = await worker.recognize(file);
+            await worker.terminate();
+
             document.getElementById('confirmCard').classList.remove('hidden');
             document.getElementById('itemName').value = text.substring(0, 30).trim();
-            ocrStatus.textContent = "Scan Complete!";
+            ocrStatus.textContent = "Done!";
         } catch (e) {
             ocrStatus.textContent = "Error: " + e.message;
-            log.textContent = "Log Error: " + e.message;
         }
     };
 });
