@@ -2,10 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <title>Exp Tracker v1.1.1</title>
+    <title>Exp Tracker v1.1.2</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="manifest" href="manifest.json" />
-    <script src="https://jsdelivr.net"></script>
+    
+    <!-- STABLE LIBRARY LINK -->
+    <script src="https://cloudflare.com"></script>
+    
     <style>
         body { margin: 0; font-family: -apple-system, sans-serif; background: #f4f6f8; color: #333; }
         .app-header { background: #3f6fb5; color: white; padding: 16px; font-weight: bold; text-align: center; }
@@ -45,10 +48,9 @@
         </div>
 
         <div class="footer-info">
-            Build: <span id="appVersion">1.1.1</span> | Scanner: <span id="libStatus" class="status-waiting">🔴 Connecting...</span>
+            Build: <span id="appVersion">1.1.2</span> | Scanner: <span id="libStatus" class="status-waiting">🔴 Connecting...</span>
         </div>
     </div>
-    <!-- The ?v= forces the browser to bypass old cache -->
-    <script src="app.js?v=1.1.1"></script>
+    <script src="app.js?v=1.1.2"></script>
 </body>
 </html>
