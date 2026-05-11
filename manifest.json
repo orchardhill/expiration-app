@@ -1,0 +1,24 @@
+{
+  "short_name": "ExpTracker",
+  "name": "Expiration Inventory Manager",
+  "description": "Scan and track food expiration dates via Google Sheets.",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "./index.html",
+  "display": "standalone",
+  "theme_color": "#3f6fb5",
+  "background_color": "#f4f6f8",
+  "orientation": "portrait"
+}
