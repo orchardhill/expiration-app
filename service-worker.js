@@ -1,4 +1,4 @@
-const CACHE_NAME = 'expiration-inventory-v2';
+const CACHE_NAME = 'expiration-inventory-v3'; // Incremented to v3 to force update
 const ASSETS = [
   './',
   './index.html',
@@ -13,7 +13,8 @@ const ASSETS = [
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(ASSETS);
+      // Logic to catch errors if one file fails to download
+      return cache.addAll(ASSETS).catch(err => console.warn("Caching failed", err));
     })
   );
   self.skipWaiting();
