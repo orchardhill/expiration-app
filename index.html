@@ -1,71 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Expiration Inventory</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json" />
+    
+    <!-- OCR & Barcode Libraries -->
+    <script src="https://jsdelivr.net"></script>
+    <script src="https://unpkg.com"></script>
+
+    <style>
+        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f4f6f8; color: #333; }
+        .app-header { background: #3f6fb5; color: white; padding: 16px; font-size: 20px; font-weight: bold; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .container { padding: 16px; max-width: 500px; margin: 0 auto; }
+        .card { background: white; border-radius: 8px; padding: 16px; margin-bottom: 16px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        h3 { margin-top: 0; color: #3f6fb5; font-size: 18px; border-bottom: 1px solid #eee; padding-bottom: 8px; }
+        label { display: block; margin-top: 15px; font-weight: bold; font-size: 14px; color: #555; }
+        input, select, textarea { width: 100%; padding: 12px; margin-top: 5px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 16px; background: #fff; }
+        .primary-btn { background: #3f6fb5; color: white; padding: 14px; width: 100%; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; margin-top: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .barcode-btn { background: #607d8b; }
+        .save-btn { background: #3c8f4f; margin-top: 20px; font-size: 18px; }
+        .preview { width: 100%; border-radius: 6px; margin-top: 10px; display: none; border: 1px solid #ddd; }
+        #barcodeVideo { width: 100%; border-radius: 6px; margin-top: 10px; display: none; background: #000; }
+        .hidden { display: none; }
+        #ocrStatus { margin-top: 10px; font-size: 14px; color: #666; text-align: center; }
+        .progress-container { width: 100%; height: 10px; background: #eee; border-radius: 10px; margin-top: 10px; overflow: hidden; }
+        #ocrProgress { height: 100%; width: 0%; background: #4caf50; transition: width 0.3s; }
+        #result { margin-top: 15px; text-align: center; font-weight: bold; padding: 10px; border-radius: 4px; }
+    </style>
+</head>
 <body>
+
     <div class="app-header">Expiration Inventory</div>
     
     <div class="container">
-        <!-- Scan Section -->
+        <!-- Capture Section -->
         <div class="card">
-            <h3>Scan Label (Auto-Fill)</h3>
+            <h3>📷 Scan Label (Auto-Fill)</h3>
             <input type="file" id="photoInput" accept="image/*" capture="environment" />
-            <button type="button" class="primary-btn" id="scanBtn">📷 Scan Label (Auto-Fill)</button>
-            <button type="button" class="primary-btn barcode-btn" id="barcodeBtn" style="background:#607d8b; margin-top:10px;">🔍 Scan Barcode</button>
+            <button type="button" class="primary-btn" id="scanBtn">Run OCR Scan</button>
+            <button type="button" class="primary-btn barcode-btn" id="barcodeBtn">Scan Barcode</button>
             
-            <video id="barcodeVideo" style="width:100%; display:none; margin-top:10px;"></video>
-            <img id="imagePreview" class="preview" style="width:100%; display:none; margin-top:10px;" />
+            <video id="barcodeVideo"></video>
+            <img id="imagePreview" class="preview" />
             
             <div class="progress-container">
-                <div class="progress-bar" id="ocrProgress"></div>
+                <div id="ocrProgress"></div>
             </div>
-            <div id="ocrStatus" style="margin-top:10px;"></div>
+            <div id="ocrStatus">Ready to scan...</div>
         </div>
 
-        <!-- THIS WAS THE MISSING PART: Confirm Section -->
+        <!-- Confirm Section -->
         <div id="confirmCard" class="card hidden">
-            <h3>Confirm Details</h3>
+            <h3>✅ Confirm Details</h3>
             <form id="itemForm">
                 <label>Item Name</label>
-                <input type="text" name="itemName" id="itemName" required />
+                <input type="text" id="itemName" name="itemName" required />
 
                 <div style="display: flex; gap: 10px;">
                     <div style="flex: 1;">
                         <label>Qty</label>
-                        <input type="number" name="quantity" id="quantity" step="0.1" />
+                        <input type="number" id="quantity" name="quantity" step="0.1" />
                     </div>
                     <div style="flex: 1;">
                         <label>Unit</label>
-                        <input type="text" name="unit" id="unit" placeholder="oz, lb, ct" />
+                        <input type="text" id="unit" name="unit" placeholder="oz, lb, ct" />
                     </div>
                 </div>
 
                 <label>Expiration Date</label>
-                <input type="date" name="expirationDate" id="expirationDate" required />
+                <input type="date" id="expirationDate" name="expirationDate" required />
 
                 <label>Location</label>
-                <select name="location" id="location">
+                <select id="location" name="location">
                     <option value="Pantry">Pantry</option>
                     <option value="Fridge">Fridge</option>
                     <option value="Freezer">Freezer</option>
                 </select>
 
                 <label>Assigned To</label>
-                <input type="text" name="assignedTo" id="assignedTo" />
+                <input type="text" id="assignedTo" name="assignedTo" />
 
-                <button type="submit" class="primary-btn" style="background: #3c8f4f; margin-top:20px;">✅ Save to Sheet</button>
+                <button type="submit" class="primary-btn save-btn">Save to Sheet</button>
             </form>
-            <div id="result" style="margin-top:15px; text-align:center; font-weight:bold;"></div>
+            <div id="result"></div>
         </div>
 
-        <!-- Raw Data Section (For Debugging) -->
+        <!-- Raw Data Section -->
         <div id="rawTextCard" class="card hidden">
-            <h3>Raw Scan Data</h3>
-            <textarea id="rawText" style="width:100%; height:100px;" readonly></textarea>
+            <h3>🔍 Raw Scan Data</h3>
+            <textarea id="rawText" rows="4" readonly></textarea>
         </div>
     </div>
 
+    <!-- Scripts -->
     <script src="app.js"></script>
     <script>
-        // PWA Service Worker Registration
+        // Register PWA Service Worker
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('service-worker.js');
+            navigator.serviceWorker.register('service-worker.js')
+            .catch(err => console.log("Service Worker failed", err));
         }
     </script>
 </body>
+</html>
